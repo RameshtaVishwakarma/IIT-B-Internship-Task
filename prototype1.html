@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="bg-white dark:bg-gray-800">
+      <div
+        class="
+          text-center
+          w-full
+          mx-auto
+          py-12
+          px-4
+          sm:px-6
+          lg:py-16 lg:px-8
+          z-20
+        "
+      >
+        <p align="center">
+          <canvas
+            id="canvas1"
+            width="800px"
+            height="150px"
+            style="border: 1px solid #000000"
+          ></canvas>
+        </p>
+        <h5>Data Point</h5>
+        <input type="number" id="point" name="" value="" />
+        <h5>Speed</h5>
+        <input type="number" id="speed" name="" value="" /> <br />
+        <br />
+        <h2
+          class="text-3xl font-extrabold text-black dark:text-white sm:text-4xl"
+        >
+          <span class="block"> DANDI LIVE PLOT VISUALIZATION </span>
+          <br /><label for="quantity" class="block text-indigo-500"
+            >Choose physical quantity:</label
+          ><br />
+          <select name="quantity" id="quantity">
+            <option value="Ax">Ax</option>
+            <option value="Ay">Ay</option>
+            <option value="Az">Az</option>
+            <option value="wx">wx</option>
+            <option value="wy">wy</option>
+            <option value="wz">wz</option></select
+          ><br />
+        </h2>
+        <div class="lg:mt-0 lg:flex-shrink-0">
+          <div class="mt-12 inline-flex rounded-md shadow">
+            <button
+              type="button"
+              name="button"
+              onclick="loadData()"
+              class="
+                py-4
+                px-6
+                bg-indigo-600
+                hover:bg-indigo-700
+                focus:ring-indigo-500 focus:ring-offset-indigo-200
+                text-white
+                w-full
+                transition
+                ease-in
+                duration-200
+                text-center text-base
+                font-semibold
+                shadow-md
+                focus:outline-none focus:ring-2 focus:ring-offset-2
+                rounded-lg
+              "
+            >
+              Request Data
+            </button>
+            <script>
+              var plotter;
+              function loadData() {
+                // clearInterval(plotter);
+                var xhttp = new XMLHttpRequest();
+                x = 3000;
+                const Ax = [];
+                const Ay = [];
+
+                canvas = document.getElementById("canvas1");
+
+                ARRAY_LENGTH = document.getElementById("point").value;
+                var speed = document.getElementById("speed").value;
+                for (let i = 0; i < ARRAY_LENGTH; i++) {
+                  Ax[i] = (i * canvas.width) / ARRAY_LENGTH;
+                }
+                xhttp.onreadystatechange = async function () {
+                  var data_array = [];
+                  if (this.readyState == 4 && this.status == 200) {
+                    //gathering data
+                    var data_raw = this.responseText;
+
+                    var data_raw_array = data_raw.split("<br>");
+                    var N_data_array = data_raw_array.length;
+                    var quantity = 3;
+
+                    for (
+                      var i = 0;
+                      i < N_data_array - 1;
+                      i++ // the last element is empty because of split based on "<br>""
+                    ) {
+                      data_array[i] = data_raw_array[i].split("\t");
+                      // console.log("This", data_array[i][2])
+                      Ax[i] = data_array[i][2] % 10;
+                      Ay[i] = -data_array[i][3] % -150;
+                    }
+
+                    c = document.getElementById("canvas1");
+                    can_width = canvas.width;
+                    ctx = c.getContext("2d");
+                    ctx.clearRect(0, 0, can_width, 150);
+                    ctx.beginPath();
+                    ctx.moveTo(Ax[0], Ay[0]);
+                    i = 0;
+
+                    var global_x = 790;
+                    var global_y = Ay[0];
+                    console.log(Ax);
+                    console.log(Ay);
+                    for (let i = 1; i < ARRAY_LENGTH; i++) {
+                      ctx.beginPath();
+                      x = Ax[i];
+                      y = Ay[i];
+                      console.log("g", global_x);
+                      ctx.moveTo(global_x, global_y);
+                      ctx.lineTo(global_x + x, y);
+                      global_y = y;
+                      let delayres = await delay(speed * (2700 / 512));
+                      ctx.stroke();
+                      shift(ctx, c, x);
+                    }
+                  }
+                };
+                xhttp.open(
+                  "GET",
+                  "http://generalai.in/dandi/dandi_device_1/plot_AT.php?Fname=RawData_2021-10-04_Mac_246F282463DC.txt&Nlines=" +
+                    ARRAY_LENGTH,
+                  true
+                );
+                xhttp.send();
+              }
+
+              function delay(delayInms) {
+                return new Promise((resolve) => {
+                  setTimeout(() => {
+                    resolve(2);
+                  }, delayInms);
+                });
+              }
+
+              function shift(ctx, c, val) {
+                // val = 100
+                // val += 10
+                var imageData = ctx.getImageData(
+                  val,
+                  0,
+                  c.width - val,
+                  c.height
+                );
+                ctx.putImageData(imageData, 0, 0);
+                // now clear the right-most pixels:
+                ctx.clearRect(c.width - val, 0, val, c.height);
+              }
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
